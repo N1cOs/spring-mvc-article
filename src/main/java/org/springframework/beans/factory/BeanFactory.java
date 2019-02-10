@@ -43,7 +43,6 @@ public class BeanFactory {
 
     public void init(String basePackage){
         instantiate(basePackage);
-        injectBeanFactory();
     }
 
     private void instantiate(String basePackage){
@@ -85,14 +84,4 @@ public class BeanFactory {
             beans.put(beanName, instance);
         }
     }
-
-    private void injectBeanFactory(){
-        for(Object bean : beans.values()){
-            if(bean instanceof BeanFactoryAware){
-                ((BeanFactoryAware)bean).setBeanFactory(this);
-            }
-        }
-    }
-
-
 }

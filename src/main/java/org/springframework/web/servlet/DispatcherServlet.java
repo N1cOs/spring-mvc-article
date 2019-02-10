@@ -1,9 +1,12 @@
 package org.springframework.web.servlet;
 
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.method.HandlerMethod;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class DispatcherServlet extends HttpServlet {
 
@@ -15,9 +18,38 @@ public class DispatcherServlet extends HttpServlet {
         webApplicationContext = context;
     }
 
+    private void doDispatch(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        HandlerMethod handler = handlerMapping.getHandler(request);
+        if(handler == null)
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        else{
+            //ToDo: add HandlerAdapter
+        }
+    }
+
     @Override
-    public final void init() throws ServletException {
+    public final void init() {
         webApplicationContext.init();
         handlerMapping = webApplicationContext.initHandlers();
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        doDispatch(req, resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        doDispatch(req, resp);
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        doDispatch(req, resp);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        doDispatch(req, resp);
     }
 }

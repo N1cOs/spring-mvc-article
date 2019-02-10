@@ -2,6 +2,7 @@ package org.springframework.web.servlet.mvc.method;
 
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
@@ -34,6 +35,14 @@ public class RequestMappingInfo {
         HashSet<RequestMethod> newMethods = new HashSet<>(methods);
         newMethods.addAll(info.methods);
         return new RequestMappingInfo(newPatterns, newMethods);
+    }
+
+    public boolean matches(String path, HttpServletRequest request) {
+        String method = request.getMethod();
+        if(methods.stream().noneMatch(s -> s.matches(method)))
+            return false;
+
+        return patterns.stream().anyMatch(path::matches);
     }
 
     public Set<String> getPatterns() {

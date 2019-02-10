@@ -9,7 +9,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface RequestMapping {
 
-    String[] path() default {};
+    String[] path() default "";
 
-    RequestMethod[] methods() default {};
+    RequestMethod[] methods() default {RequestMethod.GET, RequestMethod.POST,
+            RequestMethod.PUT, RequestMethod.DELETE};
 }

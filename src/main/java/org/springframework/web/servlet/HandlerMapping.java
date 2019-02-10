@@ -22,6 +22,12 @@ public class HandlerMapping {
                 || beanType.isAnnotationPresent(RequestMapping.class);
     }
 
+    public HandlerMethod getHandler(HttpServletRequest request){
+        String requestURI = request.getRequestURI();
+        String lookupPath = requestURI.substring(request.getContextPath().length());
+        return lookupHandlerMethod(lookupPath, request);
+    }
+
     public void detectHandlerMethods(Object handler){
         Class<?> beanType = handler.getClass();
         RequestMapping beanRequestMapping = beanType.getAnnotation(RequestMapping.class);
@@ -41,6 +47,15 @@ public class HandlerMapping {
                 registerMapping(info, handler, method);
             }
         }
+    }
+
+    private HandlerMethod lookupHandlerMethod(String path, HttpServletRequest request){
+        for(RequestMappingInfo info : mappingLookup.keySet()){
+            if(info.matches(path, request)){
+                return mappingLookup.get(info);
+            }
+        }
+        return null;
     }
 
     private void registerMapping(RequestMappingInfo info, Object handler, Method method){

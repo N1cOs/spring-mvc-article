@@ -1,5 +1,6 @@
 package org.springframework.web.method;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class HandlerMethod {
@@ -19,5 +20,9 @@ public class HandlerMethod {
 
     public Object getBean() {
         return bean;
+    }
+
+    public Object invoke(Object... args) throws InvocationTargetException, IllegalAccessException {
+        return method.invoke(bean, args);
     }
 }
