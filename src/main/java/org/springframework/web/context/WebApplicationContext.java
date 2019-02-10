@@ -7,8 +7,15 @@ public class WebApplicationContext {
 
     private BeanFactory beanFactory;
 
-    public WebApplicationContext(String basePackage){
-        beanFactory = new BeanFactory(basePackage);
+    private String basePackage;
+
+    public WebApplicationContext(ClassLoader classLoader, String basePackage){
+        beanFactory = new BeanFactory(classLoader);
+        this.basePackage = basePackage;
+    }
+
+    public void init(){
+        beanFactory.init(basePackage);
     }
 
     public HandlerMapping initHandlers(){

@@ -1,11 +1,11 @@
 package org.springframework.web.servlet;
 
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
+import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +48,7 @@ public class HandlerMapping {
         mappingLookup.put(info, handlerMethod);
 
         //is pattern?
-        info.getPatterns().stream().filter(s -> s.indexOf('*') == -1 && s.indexOf('?') == -1).
-                forEach(s -> urlLookup.get(s).add(info));
+//        info.getPatterns().stream().filter(s -> s.indexOf('*') == -1 && s.indexOf('?') == -1).
+//                forEach(s -> urlLookup.get(s).add(info));
     }
 }

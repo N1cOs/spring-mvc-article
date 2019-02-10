@@ -16,7 +16,8 @@ public class DispatcherServlet extends HttpServlet {
     }
 
     @Override
-    public void init() throws ServletException {
+    public final void init() throws ServletException {
+        webApplicationContext.init();
         handlerMapping = webApplicationContext.initHandlers();
     }
 }

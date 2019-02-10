@@ -11,7 +11,8 @@ public abstract class AbstractAnnotationConfigDispatcherServletInitializer imple
 
     @Override
     public void onStartup(ServletContext context) {
-        WebApplicationContext applicationContext = new WebApplicationContext(getPackageToScan());
+        WebApplicationContext applicationContext =
+                new WebApplicationContext(context.getClassLoader(), getPackageToScan());
         DispatcherServlet dispatcherServlet = new DispatcherServlet(applicationContext);
 
         ServletRegistration.Dynamic registration =
