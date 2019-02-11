@@ -45,14 +45,6 @@ public class RequestMappingInfo {
         return patterns.stream().anyMatch(path::matches);
     }
 
-    public Set<String> getPatterns() {
-        return patterns;
-    }
-
-    public Set<RequestMethod> getMethods() {
-        return methods;
-    }
-
     @Override
     public int hashCode() {
         return Objects.hash(patterns, methods);

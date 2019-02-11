@@ -27,20 +27,6 @@ public class BeanFactory {
         return beans;
     }
 
-    public <T> T getBean(Class<T> beanClass){
-        Object requiredBean = null;
-        for(Object bean: beans.values()){
-            if(bean.getClass().equals(beanClass)){
-                if(requiredBean == null)
-                    requiredBean = bean;
-                else
-                    throw new IllegalArgumentException("More than one bean found with class " +
-                            beanClass.getCanonicalName());
-            }
-        }
-        return (T)requiredBean;
-    }
-
     public void init(String basePackage){
         instantiate(basePackage);
     }

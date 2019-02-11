@@ -2,6 +2,7 @@ package org.springframework.web.servlet;
 
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.mvc.method.annotation.HandlerAdapter;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -14,6 +15,8 @@ public class DispatcherServlet extends HttpServlet {
 
     private HandlerMapping handlerMapping;
 
+    private HandlerAdapter handlerAdapter;
+
     public DispatcherServlet(WebApplicationContext context){
         webApplicationContext = context;
     }
@@ -22,15 +25,15 @@ public class DispatcherServlet extends HttpServlet {
         HandlerMethod handler = handlerMapping.getHandler(request);
         if(handler == null)
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
-        else{
-            //ToDo: add HandlerAdapter
-        }
+        else
+            handlerAdapter.invokeHandlerMethod(request, response, handler);
     }
 
     @Override
     public final void init() {
         webApplicationContext.init();
-        handlerMapping = webApplicationContext.initHandlers();
+        handlerMapping = webApplicationContext.initHandlerMapping();
+        handlerAdapter = webApplicationContext.initHandlerAdapter();
     }
 
     @Override

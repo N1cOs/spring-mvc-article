@@ -1,7 +1,12 @@
 package org.springframework.web.method;
 
-import java.lang.reflect.InvocationTargetException;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.List;
 
 public class HandlerMethod {
 
@@ -9,9 +14,24 @@ public class HandlerMethod {
 
     private Object bean;
 
+    private Parameter[] methodParameters;
+
+    private List<HandlerMethodArgumentResolver> resolvers;
+
     public HandlerMethod(Method method, Object bean) {
         this.method = method;
         this.bean = bean;
+        methodParameters = method.getParameters();
+    }
+
+    public void invokeAndHandle(HttpServletRequest request, HttpServletResponse response){
+        Object[] args = getMethodArgumentValues(request, response);
+        try {
+            Object result = method.invoke(bean, args);
+            response.getWriter().println(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public Method getMethod() {
@@ -22,7 +42,24 @@ public class HandlerMethod {
         return bean;
     }
 
-    public Object invoke(Object... args) throws InvocationTargetException, IllegalAccessException {
-        return method.invoke(bean, args);
+    public void setResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+        this.resolvers = resolvers;
+    }
+
+    private Object[] getMethodArgumentValues(HttpServletRequest request, HttpServletResponse response){
+        if(methodParameters.length == 0)
+            return new Object[0];
+
+        Object[] args = new Object[methodParameters.length];
+        for(int i = 0; i < args.length; i++){
+            Parameter parameter = methodParameters[i];
+            for(HandlerMethodArgumentResolver argumentResolver : resolvers){
+                if(argumentResolver.supports(parameter)){
+                    args[i] = argumentResolver.resolveArgument(parameter, request, response);
+                    break;
+                }
+            }
+        }
+        return args;
     }
 }

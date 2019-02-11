@@ -8,14 +8,11 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class HandlerMapping {
 
     private final Map<RequestMappingInfo, HandlerMethod> mappingLookup = new HashMap<>();
-
-    private final Map<String, List<RequestMappingInfo>>  urlLookup = new HashMap<>();
 
     public boolean isHandler(Class<?> beanType){
         return beanType.isAnnotationPresent(Controller.class)
@@ -44,7 +41,8 @@ public class HandlerMapping {
                 if(beanInfo != null){
                     info = info.combine(beanInfo);
                 }
-                registerMapping(info, handler, method);
+                HandlerMethod handlerMethod = new HandlerMethod(method, handler);
+                mappingLookup.put(info, handlerMethod);
             }
         }
     }
@@ -56,14 +54,5 @@ public class HandlerMapping {
             }
         }
         return null;
-    }
-
-    private void registerMapping(RequestMappingInfo info, Object handler, Method method){
-        HandlerMethod handlerMethod = new HandlerMethod(method, handler);
-        mappingLookup.put(info, handlerMethod);
-
-        //is pattern?
-//        info.getPatterns().stream().filter(s -> s.indexOf('*') == -1 && s.indexOf('?') == -1).
-//                forEach(s -> urlLookup.get(s).add(info));
     }
 }
