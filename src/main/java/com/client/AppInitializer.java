@@ -1,8 +1,8 @@
 package com.client;
 
-import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
+import org.springframework.web.WebApplicationInitializer;
 
-public class AppInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
+public class AppInitializer extends WebApplicationInitializer {
 
     @Override
     protected String getServletMapping() {

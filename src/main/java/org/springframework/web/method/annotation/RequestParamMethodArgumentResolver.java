@@ -12,12 +12,13 @@ public class RequestParamMethodArgumentResolver implements HandlerMethodArgument
     @Override
     public boolean supports(Parameter parameter) {
         RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
-        return requestParam != null && !requestParam.value().isEmpty();
+        return requestParam != null;
     }
 
     @Override
     public Object resolveArgument(Parameter parameter, HttpServletRequest request, HttpServletResponse response) {
-        String name = parameter.getAnnotation(RequestParam.class).value();
-        return request.getParameter(name);
+        RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
+        String arg = request.getParameter(requestParam.name());
+        return arg != null ? arg : requestParam.defaultValue();
     }
 }

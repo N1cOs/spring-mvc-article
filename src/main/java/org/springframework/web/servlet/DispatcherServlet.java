@@ -30,7 +30,7 @@ public class DispatcherServlet extends HttpServlet {
     }
 
     @Override
-    public final void init() {
+    public void init() {
         webApplicationContext.init();
         handlerMapping = webApplicationContext.initHandlerMapping();
         handlerAdapter = webApplicationContext.initHandlerAdapter();

@@ -24,14 +24,15 @@ public class HandlerMethod {
         methodParameters = method.getParameters();
     }
 
-    public void invokeAndHandle(HttpServletRequest request, HttpServletResponse response){
+    public Object invokeAndHandle(HttpServletRequest request, HttpServletResponse response){
         Object[] args = getMethodArgumentValues(request, response);
+        Object result = null;
         try {
-            Object result = method.invoke(bean, args);
-            response.getWriter().println(result);
+            result = method.invoke(bean, args);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return result;
     }
 
     public Method getMethod() {

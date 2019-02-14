@@ -1,7 +1,7 @@
 package org.springframework.beans.factory;
 
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.net.URL;
@@ -27,11 +27,7 @@ public class BeanFactory {
         return beans;
     }
 
-    public void init(String basePackage){
-        instantiate(basePackage);
-    }
-
-    private void instantiate(String basePackage){
+    public void instantiate(String basePackage){
         try {
             String path = basePackage.replace('.', '/');
             Enumeration<URL> resources = classLoader.getResources(path);
@@ -63,7 +59,7 @@ public class BeanFactory {
 
     private void parseClass(Class<?> classObject) throws IllegalAccessException, InstantiationException {
         if (classObject.isAnnotationPresent(Component.class) ||
-                classObject.isAnnotationPresent(Controller.class)) {
+                classObject.isAnnotationPresent(RestController.class)) {
             Object instance = classObject.newInstance();
             String className = classObject.getName();
             String beanName = className.substring(0, 1).toLowerCase() + className.substring(1);

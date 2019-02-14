@@ -1,6 +1,6 @@
 package org.springframework.web.servlet;
 
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -15,7 +15,7 @@ public class HandlerMapping {
     private final Map<RequestMappingInfo, HandlerMethod> mappingLookup = new HashMap<>();
 
     public boolean isHandler(Class<?> beanType){
-        return beanType.isAnnotationPresent(Controller.class)
+        return beanType.isAnnotationPresent(RestController.class)
                 || beanType.isAnnotationPresent(RequestMapping.class);
     }
 
@@ -33,7 +33,7 @@ public class HandlerMapping {
             beanInfo = new RequestMappingInfo(beanRequestMapping.path(), beanRequestMapping.methods());
         }
 
-        for(Method method : beanType.getMethods()){
+        for(Method method : beanType.getDeclaredMethods()){
             RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
             if(requestMapping != null){
                 RequestMappingInfo info = new RequestMappingInfo(requestMapping.path(), requestMapping.methods());

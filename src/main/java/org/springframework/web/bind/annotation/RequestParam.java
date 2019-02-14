@@ -9,5 +9,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequestParam {
 
-    String value() default "";
+    String name();
+
+    String defaultValue() default "null";
 }

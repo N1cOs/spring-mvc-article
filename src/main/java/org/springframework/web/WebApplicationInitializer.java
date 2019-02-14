@@ -1,8 +1,25 @@
 package org.springframework.web;
 
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.servlet.DispatcherServlet;
+
 import javax.servlet.ServletContext;
+import javax.servlet.ServletRegistration;
 
-public interface WebApplicationInitializer {
+public abstract class WebApplicationInitializer {
 
-    void onStartup(ServletContext context);
+    public void onStartup(ServletContext context) {
+        WebApplicationContext applicationContext =
+                new WebApplicationContext(context.getClassLoader(), getPackageToScan());
+        DispatcherServlet dispatcherServlet = new DispatcherServlet(applicationContext);
+
+        ServletRegistration.Dynamic registration =
+                context.addServlet("dispatcherServlet", dispatcherServlet);
+        registration.setLoadOnStartup(1);
+        registration.addMapping(getServletMapping());
+    }
+
+    protected abstract String getServletMapping();
+
+    protected abstract String getPackageToScan();
 }

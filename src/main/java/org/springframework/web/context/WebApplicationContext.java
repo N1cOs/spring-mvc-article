@@ -22,7 +22,7 @@ public class WebApplicationContext {
     }
 
     public void init(){
-        beanFactory.init(basePackage);
+        beanFactory.instantiate(basePackage);
     }
 
     public HandlerMapping initHandlerMapping(){
@@ -46,7 +46,4 @@ public class WebApplicationContext {
 
         return resolvers;
     }
-
-
-
 }

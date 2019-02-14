@@ -5,6 +5,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 public class HandlerAdapter {
@@ -16,9 +17,10 @@ public class HandlerAdapter {
     }
 
     public void invokeHandlerMethod(HttpServletRequest request,
-                                    HttpServletResponse response, HandlerMethod handlerMethod){
+                                    HttpServletResponse response, HandlerMethod handlerMethod) throws IOException {
         handlerMethod.setResolvers(argumentResolvers);
-        handlerMethod.invokeAndHandle(request, response);
+        Object result = handlerMethod.invokeAndHandle(request, response);
+        response.getWriter().println(result);
     }
 
 }

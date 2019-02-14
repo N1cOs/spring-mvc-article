@@ -24,16 +24,15 @@ public class RequestMappingInfo {
         this.patterns = patterns;
         this.methods = methods;
     }
-
-    //info - bean request mapping
-    public RequestMappingInfo combine(RequestMappingInfo info){
+    
+    public RequestMappingInfo combine(RequestMappingInfo beanInfo){
         Set<String> newPatterns = new HashSet<>();
-        for(String beanPattern : info.patterns){
+        for(String beanPattern : beanInfo.patterns){
             for(String pattern : patterns)
                 newPatterns.add(beanPattern + pattern);
         }
         HashSet<RequestMethod> newMethods = new HashSet<>(methods);
-        newMethods.addAll(info.methods);
+        newMethods.addAll(beanInfo.methods);
         return new RequestMappingInfo(newPatterns, newMethods);
     }
 
@@ -55,8 +54,8 @@ public class RequestMappingInfo {
         if(obj == null)
             return false;
         if(obj instanceof RequestMappingInfo){
-            RequestMappingInfo info = (RequestMappingInfo) obj;
-            return this.patterns.equals(info.patterns) && this.methods.equals(info.methods);
+            RequestMappingInfo beanInfo = (RequestMappingInfo) obj;
+            return this.patterns.equals(beanInfo.patterns) && this.methods.equals(beanInfo.methods);
         }
         return false;
     }
