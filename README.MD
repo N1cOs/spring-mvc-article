@@ -1,28 +1,28 @@
 #Реализация Spring MVC своими руками
-Spring Framework на данный момент является, наверное, самым 
+Spring Framework на данный момент времени является, наверное, самым 
 популярным фреймворком в контексте Java разработки. Сегодня мы
 с вами рассмотрим один из модулей данного фреймворка, а именно -
 Spring MVC. Мотивацией к написанию этой статьи послужила эта
 [работа](https://habr.com/ru/post/419679/) и вам лучше сначала
-прочитать её, потому что часть кода мы позаимствуем от туда. Собственно повествование
-сегодня будет складываться таким же образом, как и в представленной
+прочитать её, потому что часть кода мы позаимствуем оттуда. Собственно писать
+сегодня будем таким же образом, как и в представленной
 статье, то есть мы будем копировать структуру пакетов и 
 названия классов оригинального спринга.
 ##Что получится в итоге
-По окончанию стататьи мы реализуем часть функциональности
-аннотации RequestMapping, а именно, указание паттеронов и методов,
+По окончанию статьи мы реализуем часть функциональности
+аннотации `RequestMapping`, а именно, указание паттеронов и методов,
 которые должен обрабатывать аннотированный метод. Для того, чтобы
-сильно не раздувать статью, результат работы метода мы сразу будем
-отправлять клиенту, то есть наши контроллеры будут "рестовыми" (RestController).
+сильно не раздувать статью, результат работы метода мы сразу же будем
+отправлять клиенту, то есть наши контроллеры будут "рестовыми" (`RestController`).
 В итоге мы получим приложение, которое при запросе ресурса /root/greeting
 будет просто возвращать строку с приветствием пользователя. Имя пользователя
 будет передаваться в качестве параметра запроса, которое мы получим
-с помощью аннотации RequestParam.
+с помощью аннотации `RequestParam`.
 ##Предусловия
 Spring MVC построен на основе Servlet API, поэтому нам нужен контейнер, 
-который реализует это API. В моем случае это будет Tomcat.
+который реализует эту спецификацию. В моем случае это будет Tomcat.
 Создайте обычный Maven проект и откройте его в любимой IDE.
-Теперь чтобы получить доступ к Servlet API нам нужно подключить его
+Теперь чтобы получить доступ к Servlet API во время компиляции нам нужно подключить его
 в качестве зависимости:
 ```xml
  <dependency>
@@ -37,33 +37,32 @@ Spring MVC построен на основе Servlet API, поэтому нам
 полный код вы всегда сможете найти в этом репозитоии :)
 ##Немного теории
 Я думаю, что любой, кто когда-либо работал со Spring MVC, 
-видел картинку подобную этой:
+видел картинку, подобную этой:
 
 ![Архитектура Spring MVC](assets/SpringMVC.png)
 
-Spring MVC построен на основе паттерна Front Controller. DispatcherServlet обрабатывает
-любой запрос приходящий на сервер. Далее объект класса HandlerMapping на основе 
-информации из аннотации RequestMapping находит метод, удовлетворяющий текущему
-запросу. Потом найденный метод передается объекту HandlerAdapter, который
-сначала с помощью объектов класса HandlerMethodArgumentResolver 
+Spring MVC построен на основе паттерна Front Controller. `DispatcherServlet` обрабатывает
+любой запрос приходящий на сервер. Далее объект класса `HandlerMapping` на основе 
+информации из аннотации `RequestMapping` находит метод, удовлетворяющий текущему
+запросу. Потом найденный метод передается объекту `HandlerAdapter`, который
+сначала с помощью объектов класса `HandlerMethodArgumentResolver` 
 определяет необходимые аргументы для метода, а затем вызывает метод
-с найденными аргуемнтами. Если метод не аннотирован ResponseBody, чаще
+с найденными аргументами. Если метод не аннотирован `ResponseBody`, то чаще
 всего он возвращает строку, которая является именем шаблона. Вообще со всеми
 объектами, которые может возвращать пользовательский метод можно ознакомиться
 [здесь](https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-ann-return-types).
-В итоге ViewResolver определяет нужный шаблон, обрабатывает 
-его и отправляет клиенту.
+Наконец `ViewResolver` определяет нужный шаблон, и он отправляется клиенту.
 ##Адаптируем BeanFactory
-В прошлой части уже была написана **BeanFactory**, но в той реализации использовался
-системный **ClassLoader**, но в нашем случае, данный загрузчик будет использоваться
+В прошлой части уже была написана `BeanFactory`, однако в той реализации использовался
+системный `ClassLoader`. Но в нашем случае данный загрузчик будет использоваться
 для того, чтобы загрузить классы для работы Tomcat. Вот, посмотрите на иерархию загрузчиков
 в веб-приложении:
 
-![Иерархия загрузчиков](classloaders.jpg)
+![Иерархия загрузчиков](assets/classloaders.jpg)
 
 Как видите у каждого приложения в контейнере есть свой собственный загрузчик. Как его получить, мы
-разберем далее, а пока сделаем так, чтобы **BeanFactory** хранила в себе **ClassLoader** приложения,
-который мы получим посредством конструктора. В итоге класс **BeanFactory** в нашем случае будет выглядеть
+разберем далее, а пока сделаем так, чтобы `BeanFactory` хранила в себе `ClassLoader` нашего приложения. 
+В итоге класс `BeanFactory` в нашем случае будет выглядеть
 следующим образом:
 ```java
 public class BeanFactory {
@@ -117,19 +116,19 @@ public class BeanFactory {
     }
 }
 ```
-В отличие от предыдущей версии я изменил немного алгоритм нахождения бинов.
-Теперь в этой версии просканируются все файлы, которые находятся в базовом 
-пакете и его подпакетах. Также классы с аннотацией **RestController** 
-будут считаться бинами. Чтобы компилятор не ругался на **RestController**,
-создайте эту аннотацию в пакете **org.springframework.web.bind.annotation**:
+В отличие от предыдущей версии я немного изменил алгоритм нахождения бинов.
+В этой версии просканируются все файлы, которые находятся в базовом 
+пакете и в его подпакетах. Также классы с аннотацией `RestController` 
+будут считаться бинами. Чтобы компилятор не ругался на `RestController`,
+создайте эту аннотацию в пакете `org.springframework.web.bind.annotation`:
 ```java
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RestController {
 }
 ```
-Далее в пакете **org.springframework.web.context** создадим класс **WebApplicationContext**, 
-на данный момент он  пока будет выглядеть так:
+Далее в пакете`org.springframework.web.context` создадим класс `WebApplicationContext`, 
+на данный момент он пока будет выглядеть так:
 ```java
 public class WebApplicationContext {
 
@@ -147,12 +146,12 @@ public class WebApplicationContext {
     }
 }
 ```
-В оригинальне **WebApplicationContext** является интерфейсом, который наследуется от 
-интерфейса **ApplicationContext** добавляя при этом один единственный метод 
-`ServletContext getServletContext()`.
+В оригинале `WebApplicationContext` является интерфейсом, который наследуется от 
+интерфейса `ApplicationContext` добавляя при этом один единственный метод 
+`getServletContext()`.
 ##Создаем обработчиков
-Теперь вспомним немного про Enum и добавим класс **RequestMethod** в пакете
-**org.springframework.web.bind.annotation**:
+Теперь вспомним немного про `Enum` и добавим класс `RequestMethod` в пакете
+`org.springframework.web.bind.annotation`:
 ```java
 public enum RequestMethod {
 
@@ -169,10 +168,10 @@ public enum RequestMethod {
     }
 }
 ```
-В нашей версии мы будем испоьзовать только 4 метода протокола HTTP. Предназначение 
-метода `boolean matches(String method)` я поясню чуть позже. Ну что ж, а теперь
+В нашей версии мы будем использовать только 4 метода протокола HTTP. Предназначение 
+метода `matches(String method)` я поясню чуть позже. Что ж, а теперь
 пришло время для того, чтобы создать одну из самых основных аннотаций Spring MVC -
-**RequestMapping**. Опять же в пакете **org.springframework.web.bind.annotation**
+`RequestMapping`. Опять же в пакете `org.springframework.web.bind.annotation`
 прописываем:
 ```java
 @Retention(RetentionPolicy.RUNTIME)
@@ -185,10 +184,10 @@ public @interface RequestMapping {
             RequestMethod.PUT, RequestMethod.DELETE};
 }
 ```
-Реализуем только два поля аннотации **RequestMapping**. В качестве тренировки можете добавить
-поддержку поля `String[] consumes()`. Если что, то все аннотации типа **GetMapping**, **PostMapping**
-и т.п., просто являются более короткой записью аннотации **RequestMapping**. Наконец создадим класс 
-**HandlerMapping** в пакете **org.springframework.web.servlet**. Добавим ему метод `boolean isHandler(Class<?> beanType)`,
+Реализуем только два поля аннотации `RequestMapping`. В качестве тренировки можете добавить
+поддержку поля `String[] consumes()`. Если что, то все аннотации типа `GetMapping`, `PostMapping`
+и т.п., просто являются более короткой записью аннотации `RequestMapping`. Далее создадим класс 
+`HandlerMapping` в пакете `org.springframework.web.servlet`. Добавим ему метод `isHandler(Class<?> beanType)`,
 который будет выглядеть следующим образом:
 ```java
 public boolean isHandler(Class<?> beanType){
@@ -197,14 +196,15 @@ public boolean isHandler(Class<?> beanType){
     }
 ```
 Тело метода я почти скопировал из оригинальной его реализации, там только
-проверяется аннотация **Controller** вместо **RestController**. В некоторых статьях
-я встречал фразу, что можно заменить аннотацию **Controller**/**RestController** на аннотацию
-**Component** и все будет работать корректно. На самом деле это не совсем верно.
+проверяется аннотация `Controller` вместо `RestController`. В некоторых статьях
+я встречал фразу, что можно заменить аннотацию `Controller`/`RestController` на аннотацию
+`Component` и все будет работать корректно. На самом деле это не совсем верно.
 Смотря на тело метода можно понять, что если над контроллером поставить
-аннотацию **Component**, но не поставить аннотацию **RequestMapping**, ваши методы не будут
-обрабатывать приходящие запросы. Далее создади два класса обертки. Один из них будет содержать в себе 
-информацию, которую мы извлечем из аннотации **RequestMapping**, называться он будет соответственным образом -
-**RequestMappingInfo**. Будет располагаться в пакете **org.springframework.web.servlet.mvc.method**:
+аннотацию `Component`, но не поставить аннотацию `RequestMapping`, ваши методы не будут
+обрабатывать приходящие запросы. Далее создадим следующие два класса. 
+Один из них будет содержать в себе информацию, которую мы извлечем из аннотации `RequestMapping`, 
+называться он будет соответственным образом -`RequestMappingInfo`, будет располагаться 
+в пакете `org.springframework.web.servlet.mvc.method`:
 ```java
 public class RequestMappingInfo {
 
@@ -218,8 +218,8 @@ public class RequestMappingInfo {
     }
 }
 ```
-Пока выглядит вот так, потом мы еще добавим несколько методов. Вторым классом оберткой будет являться класс
-**HandlerMethod** из пакета **org.springframework.web.method**:
+Пока выглядит вот так, потом мы еще добавим несколько методов. Вторым классом будет являться
+`HandlerMethod` из пакета `org.springframework.web.method`:
 ```java
 public class HandlerMethod {
 
@@ -238,8 +238,8 @@ public class HandlerMethod {
 ```
 То есть данный класс содержит в себе ссылку на метод обработчик, а также на контроллер, в котором этот
 метод располагается. Также в поля класса сохраним параметры метода, потом они нам пригодятся.
-Наконец добавим метод в класс **HandlerMapping**, 
-который будет находить в контроллере все методы, которые аннотированы **RequestMapping**:
+Наконец добавим метод в класс `HandlerMapping`, который будет находить в контроллере все методы, 
+аннотированные `RequestMapping`:
 ```java
 public void detectHandlerMethods(Object handler){
         Class<?> beanType = handler.getClass();
@@ -264,15 +264,15 @@ public void detectHandlerMethods(Object handler){
         }
     }
 ```
-На этом методе остановимся поподробнее. Для начала нам нужно проверить наличие аннотации **RequestMapping**
-над самим контроллером и, если она присутствует, то на её основе создать объект класса **RequestMappingInfo**.
-Далее с помощью метода `Method[] getDeclaredMethods()` достаем все методы данного контроллера, то есть метода того
-же класса **Object** данный метод нам не вернет. Есть также метод `Method[] getMethods()`, который возвращает
-все public методы данного класса и его суперкласса. Получив все методы контроолера просто проверяем наличие
-аннотации **RequestMapping** и на её основе созаем объеты класса **RequestMappingInfo**. Теперь самое интересное, 
-нам нужно объединить информацию из аннотации **RequestMapping**, которая стояла над классом, с аннотацией, которая
-находилась над методом. Для этого добавим метод `RequestMappingInfo combine(RequestMappingInfo info)` в класс 
-**RequestMappingInfo**:
+На этом методе остановимся поподробнее. Для начала нам нужно проверить наличие аннотации `RequestMapping`
+над самим контроллером и, если она присутствует, то на её основе создать объект класса `RequestMappingInfo`.
+Далее с помощью метода `getDeclaredMethods()` достаем все методы данного контроллера, то есть метода того
+же класса `Object` данный метод нам не вернет. Есть также метод `getMethods()`, который возвращает
+все `public` методы данного класса и его суперкласса. Получив все методы контроолера просто проверяем наличие
+аннотации `RequestMapping` и на её основе создаем объекты класса `RequestMappingInfo`. Теперь самое интересное, 
+нам нужно объединить информацию из аннотации `RequestMapping`, которая стоит над классом, с аннотацией, которая
+находится над методом. Для этого добавим метод `combine(RequestMappingInfo beanInfo)` в класс 
+`RequestMappingInfo`:
 ```java
 public RequestMappingInfo combine(RequestMappingInfo beanInfo){
         Set<String> newPatterns = new HashSet<>();
@@ -288,11 +288,11 @@ public RequestMappingInfo combine(RequestMappingInfo beanInfo){
 Во-первых, нам нужно к паттернам URI, которые обрабатывает метод, 
 добавить в качестве префикса паттерны URI контроллера. Для этого воспользуемся обычной конкатенацией строк.
 Во-вторых, нам нужно объединить RequestMethod-ы контроллера и самого метода обработчика. 
-В итоге на основе полученных данных возвращаем новый объект. Возвращаяь к методу `void detectHandlerMethods(Object handler)`,
-после получения нового объекта **RequestMappingInfo** создаем объект класса **HandlerMethod** и сохраняем эти 
-два объекта в мапу, где ключом выступает **RequestMappingInfo**.
+На основе полученных данных возвращаем новый объект. Возвращаясь к методу `detectHandlerMethods(Object handler)`,
+после получения нового объекта `RequestMappingInfo` создаем объект класса `HandlerMethod` и сохраняем эти 
+два объекта в мапу, где ключом выступает `RequestMappingInfo`.
 ##Поиск методов обработчиков
-Теперь давайте добавим в класс **RequestMappingInfo** метод, который будет проверять, удовлетворяет ли объект
+Теперь давайте добавим в класс `RequestMappingInfo` метод, который будет проверять, удовлетворяет ли объект
 текущему запросу:
 ```java
 public boolean matches(String path, HttpServletRequest request) {
@@ -303,20 +303,20 @@ public boolean matches(String path, HttpServletRequest request) {
         return patterns.stream().anyMatch(path::matches);
     }
 ```
-Сначала мы проверяем метод запроса, как раз здесь нам и понадобился метод `boolean matches(String method)`
-класса **RequestMethod**, так как метод `String getMethod()` возвращает название метода запроса заглавными 
-буквами. Также в качестве параметра будем принимать путь запрашеваемого ресурса относительно 
+Сначала мы проверяем метод запроса, как раз здесь нам и понадобился метод `matches(String method)`
+класса `RequestMethod`, так как метод `getMethod()` возвращает название метода запроса заглавными 
+буквами. Также в качестве параметра будем принимать путь запрашиваемого ресурса относительно 
 нашего приложения. Далее мы проверяем удовлетворяет хотя бы один паттерн из множества `patterns`
 данному запросу. Пусть в нашем приложении паттерны можно будет задавать в качестве регулярных выражений.
-Поэтому будем использовать стандартный метод `boolean matches(String regex)` класса **String**. По хорошему
-нужно создать объекты класса **Pattern** с помощью статического метода `Pattern compile(String regex)` во время
-старта приложения для каждого объекта из множества `patterns`, а "скомпилированные" паттерны сохранить в поле 
+Поэтому будем использовать стандартный метод `matches(String regex)` класса `String`. По хорошему
+нужно создать объекты класса `Pattern` во время
+старта приложения для каждого объекта из множества `patterns`, а "скомпилированные" паттерны сохранять в поле 
 класса. Данное решение обладает двумя плюсами. Во-первых, мы сможем проверить валидность паттерна во время старта
-приложения, а не во время обработки запроса. При невалидном регулярном выражении просто бросаем исключение, не 
-давая приложению запуститься. Во-вторых, сама процедура создания объекта класса **Pattern** достаточно дорогая. Пусть
+приложения, а не во время обработки запроса. При невалидном регулярном выражении бросаем исключение, не 
+давая приложению запуститься. Во-вторых, сама процедура создания объекта класса `Pattern` достаточно дорогая. Пусть
 уж лучше приложение запускается дольше, но обработка самих запросов будет быстрее. В нашей реализации мы этого делать
-не будем, чтобы, скажем так, вспомагательного кода было поменьше. После этого добавим в 
-класс **HandlerMapping** следующий метод:
+не будем, чтобы, скажем так, вспомогательного кода было поменьше. После этого добавим в 
+класс `HandlerMapping` следующий метод:
 ```java
 private HandlerMethod lookupHandlerMethod(String path, HttpServletRequest request){
         for(RequestMappingInfo info : mappingLookup.keySet()){
@@ -327,9 +327,9 @@ private HandlerMethod lookupHandlerMethod(String path, HttpServletRequest reques
         return null;
     }
 ```
-То есть мы проходимся по всем ключам мапы `mappingLookup` и ищем **RequestMappingInfo**, удовлетворяющий
-текущему запросу. Затем просто возвращаем **HandlerMethod** соответствующий найденному ключу. Наконец добавим
-`public` метод, который мы будем вызывать непосредственно из класса **DispatcherServlet**:
+То есть мы проходимся по всем ключам мапы `mappingLookup` и ищем `RequestMappingInfo`, удовлетворяющий
+текущему запросу. Затем просто возвращаем `HandlerMethod` соответствующий найденному ключу. Наконец добавим
+`public` метод, который мы будем вызывать непосредственно из класса `DispatcherServlet`:
 ```java
 public HandlerMethod getHandler(HttpServletRequest request){
         String requestURI = request.getRequestURI();
@@ -342,9 +342,9 @@ public HandlerMethod getHandler(HttpServletRequest request){
 Обычно context path-ом является название war файла приложения. То есть в итоге `lookupPath` 
 будет равен `/test.`
 ##Вызываем метод обработчик
-После того, как мы нашли метод обработчик для данного запроса, нам нужно его вызвать. Но для того, чтобы
-его вызвать, нам сначала нужно найти аргументы этого метода. Этим занимаюся классы, реализующие интерфейс
-**HandlerMethodArgumentResolver** из пакета **org.springframework.web.method.support**. Данный интерфейс выглядит
+После того, как мы нашли метод обработчик для текущего запроса, нам нужно его вызвать. Но для того, чтобы
+его вызвать, нам сначала нужно найти аргументы этого метода. Этим занимаются классы, реализующие интерфейс
+`HandlerMethodArgumentResolver` из пакета `org.springframework.web.method.support`. Данный интерфейс выглядит
 следующим образом:
 ```java
 public interface HandlerMethodArgumentResolver {
@@ -356,11 +356,11 @@ public interface HandlerMethodArgumentResolver {
 ```
 Спринг по умолчанию имеет немалое количество "резолверов", но, если вы захотели создать свой собственный,
 то реализуйте этот интерфейс, а потом в конфигурации приложения добавьте его с помощью метода 
-`addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers)` класса **WebMvcConfigurerAdapter**.
-Для каждого типа параметра метода существует свой **HandlerMethodArgumentResolver**. Если есть желание ознакомиться
+`addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers)` класса `WebMvcConfigurerAdapter`.
+Для каждого типа параметра метода обработчика существует свой `HandlerMethodArgumentResolver`. Если есть желание ознакомиться
 со всеми типами параметров, который может принимать ваш метод, можете заглянуть [сюда](https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-ann-arguments).
-В нашей версии спринга параметром метода может быть **HttpServletRequest** и строка, являющееся параметром запроса.
-Значение строки мы достанем с помощью аннотации **RequestParam** из пакета **org.springframework.web.bind.annotation**:
+В нашей версии параметром метода может быть `HttpServletRequest` и строка, являющееся параметром запроса.
+Значение строки мы достанем с помощью аннотации `RequestParam` из пакета `org.springframework.web.bind.annotation`:
 ```java
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
@@ -373,9 +373,9 @@ public @interface RequestParam {
 ```
 Как видите, в качестве "таргета" мы указали только параметр метода. Так как `null` не может являться значением по 
 умолчанию, у нас будет просто строка null. По хорошему нужно создать отдельную константу для этого, что, кстати,
-и делают Juergen Hoeller и компания. Далее давайте добавим класс **RequestParamMethodArgumentResolver**, 
-который будет обрабатывать параметры метода с аннотацией **RequestParam**. Данный класс находится в пакете 
-**org.springframework.web.method.annotation**:
+и делают Juergen Hoeller и компания. Далее давайте добавим класс `RequestParamMethodArgumentResolver`, 
+который будет обрабатывать параметры метода с аннотацией `RequestParam`. Данный класс находится в пакете 
+`org.springframework.web.method.annotation`:
 ```java
 public class RequestParamMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -394,7 +394,7 @@ public class RequestParamMethodArgumentResolver implements HandlerMethodArgument
 }
 ```
 Я думаю, что здесь все понятно. Также добавим "резолвера" для объекта запроса, он будет находится в том же пакете
-**org.springframework.web.method.annotation** и будем называться **HttpRequestMethodArgumentResolver**:
+`org.springframework.web.method.annotation` и будем называться соответственным образом - `HttpRequestMethodArgumentResolver`:
 ```java
 public class HttpRequestMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -409,9 +409,9 @@ public class HttpRequestMethodArgumentResolver implements HandlerMethodArgumentR
     }
 }
 ```
-Данный класс получился еще проще предыдущего. Метод `boolean isAssignableFrom(Class<?> clazz)` проверяет
-является ли класс **HttpServletRequest** суперинтерфейсом для класса параметра. Теперь пусть класс 
-**HandlerMethod** будет содержать в себе следующий метод:
+Данный класс получился еще проще предыдущего. Метод `isAssignableFrom(Class<?> clazz)` проверяет
+является ли класс `HttpServletRequest` суперинтерфейсом для класса параметра. Теперь пусть класс 
+`HandlerMethod` будет содержать в себе следующий метод:
 ```java
 private Object[] getMethodArgumentValues(HttpServletRequest request, HttpServletResponse response){
         if(methodParameters.length == 0)
@@ -431,7 +431,7 @@ private Object[] getMethodArgumentValues(HttpServletRequest request, HttpServlet
     }
 ``` 
 Как понятно из названия, данный метод непосредственно будет определять аргументы для метода обработчика.
-Если помните, то массив `methodParameters` мы заполнили в конструторе. `resolvers` - это обычный лист, который
+Если помните, то массив `methodParameters` мы заполнили в конструкторе. `resolvers` - это обычный лист, который
 мы присвоим с помощью сетера. Наконец добавим публичный метод для вызова обработчика:
 ```java
 public Object invokeAndHandle(HttpServletRequest request, HttpServletResponse response){
@@ -446,8 +446,8 @@ public Object invokeAndHandle(HttpServletRequest request, HttpServletResponse re
     }
 ```
 Ничего сложного, сначала определяем аргументы метода, далее вызываем его и возвращаем результат
-работы. Сам **DispatcherServlet** не будет вызывать метод обработчик, этим займется класс **HandlerAdapter**
-из пакета **org.springframework.web.servlet.mvc.method.annotation**:
+работы. Сам `DispatcherServlet` не будет вызывать метод обработчик, этим займется класс `HandlerAdapter`
+из пакета `org.springframework.web.servlet.mvc.method.annotation`:
 ```java
 public class HandlerAdapter {
 
@@ -469,8 +469,8 @@ public class HandlerAdapter {
 В этом методе мы запускаем метод обработчик и сразу отправляем результат клиенту. 
 Также, как вы могли заметить, данный класс будет хранить в себе все "резолверы".
 ##Создаем DispatcherServlet
-Что ж, пришло время создать точку входа в наше приложение. Добавьте класс **DispatcherServlet** в пакете 
-**org.springframework.web.servlet**:
+Что ж, пришло время создать точку входа в наше приложение. Добавьте класс `DispatcherServlet` в пакет 
+`org.springframework.web.servlet`:
 ```java
 public class DispatcherServlet extends HttpServlet {
 
@@ -503,7 +503,7 @@ public class DispatcherServlet extends HttpServlet {
 просто будем возвращать клиенту 404. Если же метод найден, то вызываем его с помощью `handlerAdapter`.
 ##Инициализация
 Мы добавили поля `handlerMapping` и `handlerAdapter`, но не инициализировали их, пришло время сделать это.
-В класс **WebApplicationContext** нужно добавить следующие методы. Во-первых метод для инициализации **HandlerMapping**:
+В класс `WebApplicationContext` нужно добавить следующие методы. Во-первых метод для инициализации `HandlerMapping`:
 ```java
 public HandlerMapping initHandlerMapping(){
         HandlerMapping handlerMapping = new HandlerMapping();
@@ -516,7 +516,7 @@ public HandlerMapping initHandlerMapping(){
     }
 ```
 То есть мы проверяем является ли бин контроллером, если является, то пытаемся найти в нем все методы
-обработчики. Во-вторых добавим метод для инициализации **HandlerAdapter**:
+обработчики. Во-вторых добавим метод для инициализации `HandlerAdapter`:
 ```java
 public HandlerAdapter initHandlerAdapter(){
         return new HandlerAdapter(initArgumentResolvers());
@@ -530,14 +530,14 @@ public HandlerAdapter initHandlerAdapter(){
         return resolvers;
     }
 ```
-Сначала создаем всех доступных "резолверов", а потом на их основе создаем **HandlerAdapter**.
+Сначала создаем всех доступных "резолверов", а потом на их основе создаем `HandlerAdapter`.
 Не забудем и инициализировать саму фабрику:
 ```java
 public void init(){
         beanFactory.instantiate(basePackage);
     }
 ```
-А теперь осталось все эти методы вызвать в **DispatcherServlet**:
+А теперь осталось все эти методы вызвать в `DispatcherServlet`:
 ```java
 @Override
 public void init() {
@@ -551,7 +551,7 @@ public void init() {
 До того, как появилась 3 версия Servlet API, регистрацию DispatcherServlet-a
 осуществляли только с помощью web.xml, но в 3 версии добавили возможность регистрации
 через Java код. В нашей реализации мы будем производить регистрацию именно с помощью кода.
-Создадим класс **WebApplicationInitializer** в пакете **org.springframework.web**:
+Создадим класс `WebApplicationInitializer` в пакете `org.springframework.web`:
 ```java
  public abstract class WebApplicationInitializer {
  
@@ -571,14 +571,14 @@ public void init() {
      protected abstract String getPackageToScan();
  }
 ```
-Сделаем два абстракных метода, чтобы клиент мог указать мапинг для DispatcherServlet-a и пакет, 
+Сделаем два абстрактных метода, чтобы клиент мог указать мапинг для DispatcherServlet-a и пакет, 
 в котором находятся пользовательские классы. Если помните еще при создании фабрики был вопрос, откуда 
-нам взять **ClassLoader**? Как раз с помощью **ServletContext** мы это и сделаем. Также укажем диспатчер
+нам взять `ClassLoader`? Как раз с помощью `ServletContext` мы это и сделаем. Также укажем диспатчер
 сервлету, чтобы его инициализация происходила во время старта приложения. А теперь вопрос, как сделать так, чтобы 
-контейнер при старте приложения вызвал метод `void onStartup(ServletContext context)`? Для этого будем 
+контейнер при старте приложения вызвал наш метод `onStartup(ServletContext context)`? Для этого будем 
 использовать механизм SPI. Подробнее про это можно прочесть [здесь](https://www.baeldung.com/java-spi)(английский) 
 и [здесь](https://habr.com/ru/post/118488/)(русский). Во-первых создадим класс, который будет реализовывать 
-интерфейс **ServletContainerInitializer**. В пакет **org.springframework.web** добавим класс **SpringServletContainerInitializer**:
+интерфейс `ServletContainerInitializer`. В пакет `org.springframework.web` добавим класс `SpringServletContainerInitializer`:
 ```java
 @HandlesTypes(WebApplicationInitializer.class)
 public class SpringServletContainerInitializer implements ServletContainerInitializer {
@@ -599,14 +599,15 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
     }
 }
 ```
-Самое интересное для нас здесь - аннотация **HandlesTypes**. Во время старта приложения контейнер будет 
-в war-файле искать все классы, которые реализуют интерфейс **WebApplicationInitializer**, все найденные
-классы он передаст в качестве множетсва `classes`. Дальше мы уже сами руками вызываем метод 
-`void onStartup(ServletContext context)`. Наконец создаем файл с названием `javax.servlet.ServletContainerInitializer`
+Самое интересное для нас здесь - аннотация `HandlesTypes`. Во время старта приложения контейнер будет 
+в war файле искать все классы, которые реализуют интерфейс `WebApplicationInitializer`, все найденные
+классы он передаст в качестве множества `classes`. Дальше мы уже сами руками вызываем метод 
+`onStartup(ServletContext context)`. Наконец создаем файл с названием `javax.servlet.ServletContainerInitializer`
 в директории `resources/META-INF/services/`. В нем прописываем полное имя класса, который реализует интерфейс
-**ServletContainerInitializer**. В нашем случае это будет `org.springframework.web.SpringServletContainerInitializer`.
+`ServletContainerInitializer`. В нашем случае это будет `org.springframework.web.SpringServletContainerInitializer`.
 ##Пишем клиента
-Что ж, настало время проверить, то что мы написали. Создайте пакет **com.client**, а в нем класс **AppInitializer**:
+Что ж, настало время проверить, что мы написали. Создайте пакет `com.client`, а в нем класс 
+`AppInitializer`:
 ```java
 public class AppInitializer extends WebApplicationInitializer {
 
@@ -621,8 +622,8 @@ public class AppInitializer extends WebApplicationInitializer {
     }
 }
 ```
-Далее осталось только добавить немного контроллеров. В пакете **com.client.controller** создадим класс 
-**GreetingController**:
+Далее осталось только добавить контроллер. В пакете `com.client.controller` создадим класс 
+`GreetingController`:
 ```java
 @RestController
 @RequestMapping(path = "/root", methods = RequestMethod.POST)
@@ -645,12 +646,12 @@ public class GreetingController {
 
 ![Test 1](/assets/test_1.png)
 
-Теперь попробуем отправить PUT запрос на тот же адрес:
+Теперь попробуем отправить `PUT` запрос на тот же адрес:
 
 ![Test 2](/assets/test_2.png)
 
-Все как и должно быть, 404, так как мы обрабатываем только GET и POST методы. Наконец отправим
-GET запрос без параметра:
+Все как и ожидалось. Сервер нам вернул 404, так как мы обрабатываем только `GET` и `POST` методы. 
+Наконец отправим `GET` запрос без параметра:
 
 ![Test 3](/assets/test_3.png)
 
