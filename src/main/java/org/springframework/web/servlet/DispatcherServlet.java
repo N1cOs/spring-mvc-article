@@ -11,6 +11,10 @@ import java.io.IOException;
 
 public class DispatcherServlet extends HttpServlet {
 
+    public final static String HANDLER_MAPPING_BEAN_NAME = "handlerMapping";
+
+    public final static String HANDLER_ADAPTER_BEAN_NAME= "handlerAdapter";
+
     private WebApplicationContext webApplicationContext;
 
     private HandlerMapping handlerMapping;
@@ -32,8 +36,10 @@ public class DispatcherServlet extends HttpServlet {
     @Override
     public void init() {
         webApplicationContext.init();
-        handlerMapping = webApplicationContext.initHandlerMapping();
-        handlerAdapter = webApplicationContext.initHandlerAdapter();
+        handlerMapping =
+                (HandlerMapping) webApplicationContext.getBean(HANDLER_MAPPING_BEAN_NAME);
+        handlerAdapter =
+                (HandlerAdapter) webApplicationContext.getBean(HANDLER_ADAPTER_BEAN_NAME);
     }
 
     @Override

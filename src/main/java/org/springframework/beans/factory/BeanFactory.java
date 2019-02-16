@@ -27,6 +27,10 @@ public class BeanFactory {
         return beans;
     }
 
+    public void addBean(String name, Object bean){
+        beans.put(name, bean);
+    }
+
     public void instantiate(String basePackage){
         try {
             String path = basePackage.replace('.', '/');

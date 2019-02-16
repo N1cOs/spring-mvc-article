@@ -9,8 +9,9 @@ import javax.servlet.ServletRegistration;
 public abstract class WebApplicationInitializer {
 
     public void onStartup(ServletContext context) {
-        WebApplicationContext applicationContext =
-                new WebApplicationContext(context.getClassLoader(), getPackageToScan());
+        context.setAttribute(WebApplicationContext.BASE_PACKAGE_ATTRIBUTE, getPackageToScan());
+
+        WebApplicationContext applicationContext = new WebApplicationContext(context);
         DispatcherServlet dispatcherServlet = new DispatcherServlet(applicationContext);
 
         ServletRegistration.Dynamic registration =

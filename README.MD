@@ -62,7 +62,7 @@ Spring MVC построен на основе паттерна Front Controller.
 
 Как видите у каждого приложения в контейнере есть свой собственный загрузчик. Как его получить, мы
 разберем далее, а пока сделаем так, чтобы `BeanFactory` хранила в себе `ClassLoader` нашего приложения. 
-В итоге класс `BeanFactory` в нашем случае будет выглядеть
+В итоге сканирование классов в `BeanFactory` будет выглядеть
 следующим образом:
 ```java
 public class BeanFactory {
@@ -132,19 +132,27 @@ public @interface RestController {
 ```java
 public class WebApplicationContext {
 
+    public final static String BASE_PACKAGE_ATTRIBUTE = "basePackage";
+
+    private ServletContext servletContext;
+
     private BeanFactory beanFactory;
 
-    private String basePackage;
+    public WebApplicationContext(ServletContext servletContext){
+        this.servletContext = servletContext;
+        beanFactory = new BeanFactory(servletContext.getClassLoader());
+    }
 
-    public WebApplicationContext(ClassLoader classLoader, String basePackage){
-        beanFactory = new BeanFactory(classLoader);
-        this.basePackage = basePackage;
+    public Object getBean(String name){
+        return beanFactory.getBean(name);
     }
 }
 ```
-В оригинале `WebApplicationContext` является интерфейсом, который наследуется от 
-интерфейса `ApplicationContext` добавляя при этом один единственный метод 
-`getServletContext()`.
+Мы установим название пакета с классами клиента в качестве атрибута `ServletContext`,
+как раз именем этого атрибута будет являться `BASE_PACKAGE_ATTRIBUTE`.Также именно с помощью
+`ServletContext` мы достанем загрузчик нашего приложения. В оригинале `WebApplicationContext` 
+является интерфейсом, который наследуется от интерфейса `ApplicationContext` добавляя при этом один 
+единственный метод `getServletContext()`.
 ## Создаем обработчиков
 Теперь вспомним немного про `Enum` и добавим класс `RequestMethod` в пакете
 `org.springframework.web.bind.annotation`:
@@ -477,6 +485,10 @@ public class HandlerAdapter {
 ```java
 public class DispatcherServlet extends HttpServlet {
 
+    public final static String HANDLER_MAPPING_BEAN_NAME = "handlerMapping";
+    
+    public final static String HANDLER_ADAPTER_BEAN_NAME= "handlerAdapter";
+    
     private WebApplicationContext webApplicationContext;
 
     private HandlerMapping handlerMapping;
@@ -504,11 +516,12 @@ public class DispatcherServlet extends HttpServlet {
 Как видите, методы типа `doX` будут просто делегировать запрос методу `doDispatch`. Этот метод сначала
 будет искать метод обработчик, который удовлетворяет текущему запросу. Если не удалось найти такой метод, то
 просто будем возвращать клиенту 404. Если же метод найден, то вызываем его с помощью `handlerAdapter`.
+Также добавим имена бинов, которые мы будем использовать дальше для инициализации.
 ## Инициализация
 Мы добавили поля `handlerMapping` и `handlerAdapter`, но не инициализировали их, пришло время сделать это.
 В класс `WebApplicationContext` нужно добавить следующие методы. Во-первых метод для инициализации `HandlerMapping`:
 ```java
-public HandlerMapping initHandlerMapping(){
+private HandlerMapping initHandlerMapping(){
         HandlerMapping handlerMapping = new HandlerMapping();
         for (Object bean : beanFactory.getBeans().values()) {
             Class<?> beanType = bean.getClass();
@@ -521,7 +534,7 @@ public HandlerMapping initHandlerMapping(){
 То есть мы проверяем является ли бин контроллером, если является, то пытаемся найти в нем все методы
 обработчики. Во-вторых добавим метод для создания `HandlerAdapter`:
 ```java
-public HandlerAdapter initHandlerAdapter(){
+private HandlerAdapter initHandlerAdapter(){
         return new HandlerAdapter(initArgumentResolvers());
     }
 
@@ -534,19 +547,24 @@ public HandlerAdapter initHandlerAdapter(){
     }
 ```
 Сначала создаем всех доступных "резолверов", а потом на их основе создаем `HandlerAdapter`.
-Не забудем и инициализировать саму фабрику:
+Теперь инициализируем нашу фабрику и добавим руками еще два бина `HandlerMapping` и `HandlerAdapter`:
 ```java
 public void init(){
+        String basePackage = (String) servletContext.getAttribute(BASE_PACKAGE_ATTRIBUTE);
         beanFactory.instantiate(basePackage);
+        beanFactory.addBean(DispatcherServlet.HANDLER_MAPPING_BEAN_NAME, initHandlerMapping());
+        beanFactory.addBean(DispatcherServlet.HANDLER_ADAPTER_BEAN_NAME, initHandlerAdapter());
     }
 ```
-А теперь осталось все эти методы вызвать в `DispatcherServlet`:
+А теперь осталось вызвать этот метод в `DispatcherServlet` и достать наших "хэндлеров":
 ```java
 @Override
-public void init() {
+    public void init() {
         webApplicationContext.init();
-        handlerMapping = webApplicationContext.initHandlerMapping();
-        handlerAdapter = webApplicationContext.initHandlerAdapter();
+        handlerMapping =
+                (HandlerMapping) webApplicationContext.getBean(HANDLER_MAPPING_BEAN_NAME);
+        handlerAdapter =
+                (HandlerAdapter) webApplicationContext.getBean(HANDLER_ADAPTER_BEAN_NAME);
     }
 ```
 Данный метод будет вызван контейнером при старте приложения и произведёт всю нужную нам инициализацию.
@@ -559,8 +577,9 @@ public void init() {
  public abstract class WebApplicationInitializer {
  
      public void onStartup(ServletContext context) {
-         WebApplicationContext applicationContext =
-                 new WebApplicationContext(context.getClassLoader(), getPackageToScan());
+         context.setAttribute(WebApplicationContext.BASE_PACKAGE_ATTRIBUTE, getPackageToScan());
+ 
+         WebApplicationContext applicationContext = new WebApplicationContext(context);
          DispatcherServlet dispatcherServlet = new DispatcherServlet(applicationContext);
  
          ServletRegistration.Dynamic registration =
@@ -575,9 +594,9 @@ public void init() {
  }
 ```
 Сделаем два абстрактных метода, чтобы клиент мог указать мапинг для DispatcherServlet-a и пакет, 
-в котором находятся пользовательские классы. Если помните еще при создании фабрики был вопрос, откуда 
-нам взять `ClassLoader`? Как раз с помощью `ServletContext` мы это и сделаем. Также укажем диспатчер
-сервлету, чтобы его инициализация происходила во время старта приложения.  
+в котором находятся пользовательские классы. Установим название пакета с классами клиента в качестве
+атрибута ServletContext-а. Также укажем диспатчер сервлету, чтобы его инициализация происходила во время 
+старта приложения.  
 
 В реальном веб-приложении может возникнуть нужда в создании еще одного DispatcherServlet-a, но с другой
 конфигурацией, то есть получается, что у них должен быть разный `WebApplicationContext`. Но также помимо
