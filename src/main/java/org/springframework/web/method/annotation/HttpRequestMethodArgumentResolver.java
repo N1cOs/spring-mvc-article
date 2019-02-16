@@ -14,7 +14,8 @@ public class HttpRequestMethodArgumentResolver implements HandlerMethodArgumentR
     }
 
     @Override
-    public Object resolveArgument(Parameter parameter, HttpServletRequest request, HttpServletResponse response) {
+    public Object resolveArgument(Parameter parameter, HttpServletRequest request,
+                                  HttpServletResponse response) {
         return request;
     }
 }

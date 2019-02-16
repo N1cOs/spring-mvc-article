@@ -16,8 +16,8 @@ public class HandlerAdapter {
         this.argumentResolvers = argumentResolvers;
     }
 
-    public void invokeHandlerMethod(HttpServletRequest request,
-                                    HttpServletResponse response, HandlerMethod handlerMethod) throws IOException {
+    public void invokeHandlerMethod(HttpServletRequest request, HttpServletResponse response,
+                                    HandlerMethod handlerMethod) throws IOException {
         handlerMethod.setResolvers(argumentResolvers);
         Object result = handlerMethod.invokeAndHandle(request, response);
         response.getWriter().println(result);

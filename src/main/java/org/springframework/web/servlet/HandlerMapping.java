@@ -36,7 +36,8 @@ public class HandlerMapping {
         for(Method method : beanType.getDeclaredMethods()){
             RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
             if(requestMapping != null){
-                RequestMappingInfo info = new RequestMappingInfo(requestMapping.path(), requestMapping.methods());
+                RequestMappingInfo info =
+                        new RequestMappingInfo(requestMapping.path(), requestMapping.methods());
 
                 if(beanInfo != null){
                     info = info.combine(beanInfo);

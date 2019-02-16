@@ -248,13 +248,13 @@ public void detectHandlerMethods(Object handler){
         for(Method method : beanType.getDeclaredMethods()){
             RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
             if(requestMapping != null){
-                RequestMappingInfo info = new RequestMappingInfo(requestMapping.path(), requestMapping.methods());
+                RequestMappingInfo info = 
+                        new RequestMappingInfo(requestMapping.path(), requestMapping.methods());
 
                 if(beanInfo != null){
                     info = info.combine(beanInfo);
                 }
                 HandlerMethod handlerMethod = new HandlerMethod(method, handler);
-                //mappingLookup - поле класса, обычная хеш-мапа
                 mappingLookup.put(info, handlerMethod);
             }
         }
@@ -287,7 +287,7 @@ public RequestMappingInfo combine(RequestMappingInfo beanInfo){
 На основе полученных данных возвращаем новый объект. Возвращаясь к методу `detectHandlerMethods(Object handler)`,
 после получения нового объекта `RequestMappingInfo` создаем объект класса `HandlerMethod` и сохраняем эти 
 два объекта в мапу, где ключом выступает `RequestMappingInfo`.
-## Поиск методов обработчиков
+## Поиск обработчика запроса
 Теперь давайте добавим в класс `RequestMappingInfo` метод, который будет проверять, удовлетворяет ли данный объект
 переданному запросу:
 ```java
@@ -381,17 +381,18 @@ public @interface RequestParam {
 public class RequestParamMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Override
-        public boolean supports(Parameter parameter) {
-            RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
-            return requestParam != null;
-        }
-    
-        @Override
-        public Object resolveArgument(Parameter parameter, HttpServletRequest request, HttpServletResponse response) {
-            RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
-            String arg = request.getParameter(requestParam.name());
-            return arg != null ? arg : requestParam.defaultValue();
-        }
+    public boolean supports(Parameter parameter) {
+        RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
+        return requestParam != null;
+    }
+
+    @Override
+    public Object resolveArgument(Parameter parameter, HttpServletRequest request,
+                                  HttpServletResponse response) {
+        RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
+        String arg = request.getParameter(requestParam.name());
+        return arg != null ? arg : requestParam.defaultValue();
+    }
 }
 ```
 Я думаю, что здесь все понятно. Также добавим "резолвера" для объекта запроса, он будет находится в том же пакете
@@ -405,7 +406,8 @@ public class HttpRequestMethodArgumentResolver implements HandlerMethodArgumentR
     }
 
     @Override
-    public Object resolveArgument(Parameter parameter, HttpServletRequest request, HttpServletResponse response) {
+    public Object resolveArgument(Parameter parameter, HttpServletRequest request,
+                                  HttpServletResponse response) {
         return request;
     }
 }
@@ -458,12 +460,13 @@ public class HandlerAdapter {
         this.argumentResolvers = argumentResolvers;
     }
 
-    public void invokeHandlerMethod(HttpServletRequest request,
-                                        HttpServletResponse response, HandlerMethod handlerMethod) throws IOException {
-            handlerMethod.setResolvers(argumentResolvers);
-            Object result = handlerMethod.invokeAndHandle(request, response);
-            response.getWriter().println(result);
-        }
+    public void invokeHandlerMethod(HttpServletRequest request, HttpServletResponse response, 
+                                    HandlerMethod handlerMethod) throws IOException {
+        handlerMethod.setResolvers(argumentResolvers);
+        Object result = handlerMethod.invokeAndHandle(request, response);
+        response.getWriter().println(result);
+    }
+
 }
 ```
 В методе `invokeHandlerMethod` мы запускаем метод обработчик и сразу отправляем результат клиенту. 

@@ -16,7 +16,8 @@ public class RequestParamMethodArgumentResolver implements HandlerMethodArgument
     }
 
     @Override
-    public Object resolveArgument(Parameter parameter, HttpServletRequest request, HttpServletResponse response) {
+    public Object resolveArgument(Parameter parameter, HttpServletRequest request,
+                                  HttpServletResponse response) {
         RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
         String arg = request.getParameter(requestParam.name());
         return arg != null ? arg : requestParam.defaultValue();
